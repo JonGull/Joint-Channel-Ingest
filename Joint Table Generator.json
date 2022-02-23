@@ -1,0 +1,209 @@
+{
+ "metadata": {
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.3"
+  },
+  "orig_nbformat": 4,
+  "kernelspec": {
+   "name": "python3",
+   "display_name": "Python 3.8.3 64-bit ('venv': venv)"
+  },
+  "interpreter": {
+   "hash": "cab7bfe12d3bddcecdf1adadffe595ae2362a968aa30b7cac1e46ce62df3564f"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2,
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 214,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import _sql_access_utils\n",
+    "import pandas as pd\n",
+    "# The Combiner"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 219,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\n",
+    "def chat_data_lookup(chat_df, lca, day):\n",
+    "    chat_lookup = chat_df[(chat_df.lca==lca) & (chat_df.chat_date == day.date())]\n",
+    "    if len(chat_lookup) == 1:\n",
+    "        return str(chat_lookup.chats.iloc[0])\n",
+    "    elif len(chat_lookup) > 1:\n",
+    "        return str(chat_lookup.chats.sum())\n",
+    "    else:\n",
+    "        return 0\n",
+    "    return \"Chat Data Lookup Error\"\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 224,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def phone_data_lookup(phone_df, lca, day):\n",
+    "    phone_lookup = phone_df[(phone_df.lca==lca) & phone_df.answered_date == day.date())]\n",
+    "    if len(phone_lookup) >= 1:\n",
+    "        outbound_lookup"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 220,
+   "metadata": {
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Generate a blank list of entries from our mapping tab for every date. \r\n",
+    "\r\n",
+    "get_calendar_date_table_query = '''Select * from [dbo].[udf-Range-Date]('2021-06-01',GETDATE(),'DD',1) '''\r\n",
+    "calendar_df = _sql_access_utils.get_query_as_dataframe(query=get_calendar_date_table_query ,database='kcom_data')\r\n",
+    "\r\n",
+    "lca_joint_list_query = '''select distinct lca from dim_AL_chat_email_phone_lookup'''\r\n",
+    "lca_list = _sql_access_utils.get_query_as_dataframe(query=lca_joint_list_query ,database='liveengage_chat_data').lca.to_list()\r\n",
+    "\r\n",
+    "chat_df = _sql_access_utils.get_query_as_dataframe(query='select * from dbo.view_chat_data_general_aggregated' ,database='liveengage_chat_data')\r\n",
+    "chat_df.chat_date = pd.to_datetime(chat_df.chat_date).dt.date\r\n",
+    "\r\n",
+    "#Query phone entry goes here\r\n",
+    "\r\n",
+    "rows_list = []\r\n",
+    "\r\n",
+    "for day in calendar_df.RetVal:\r\n",
+    "    for lca in lca_list:\r\n",
+    "        date_entry = {\"answered_date\":day,\r\n",
+    "        \"lca\":lca,\r\n",
+    "        \"no_of_chats\":chat_data_lookup(chat_df, lca, day),\r\n",
+    "        \"no_of_inbound\":phone_data_lookup(phone_df, lca, day)\r\n",
+    "        }\r\n",
+    "        rows_list.append(date_entry)\r\n",
+    "\r\n",
+    "df = pd.DataFrame(rows_list)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 231,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "execute_result",
+     "data": {
+      "text/plain": [
+       "       number_of_calls answered_date                                   lca  \\\n",
+       "0                    1    2020-06-01     Citizens Advice Carlisle and Eden   \n",
+       "1                    1    2020-06-01               Citizens Advice Cheadle   \n",
+       "2                    1    2020-06-01               Citizens Advice Gosport   \n",
+       "3                    1    2020-06-01  Citizens Advice Hammersmith & Fulham   \n",
+       "4                    1    2020-06-01              Citizens Advice Waverley   \n",
+       "...                ...           ...                                   ...   \n",
+       "77219            15955    2021-05-10                                  None   \n",
+       "77220            16175    2021-06-07                                  None   \n",
+       "77221            17172    2021-07-05                                  None   \n",
+       "77222            17574    2021-06-21                                  None   \n",
+       "77223            17722    2021-06-28                                  None   \n",
+       "\n",
+       "                      ops_group member_number  outbound_any  \n",
+       "0               Single Queue 25       30/0027          True  \n",
+       "1               Single Queue 45       50/0070          True  \n",
+       "2               Single queue 25       85/0028         False  \n",
+       "3      West & South West London       17/0016          True  \n",
+       "4               Single queue 80       75/0049          True  \n",
+       "...                         ...           ...           ...  \n",
+       "77219                      None          None         False  \n",
+       "77220                      None          None         False  \n",
+       "77221                      None          None         False  \n",
+       "77222                      None          None         False  \n",
+       "77223                      None          None         False  \n",
+       "\n",
+       "[77224 rows x 6 columns]"
+      ],
+      "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>number_of_calls</th>\n      <th>answered_date</th>\n      <th>lca</th>\n      <th>ops_group</th>\n      <th>member_number</th>\n      <th>outbound_any</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>1</td>\n      <td>2020-06-01</td>\n      <td>Citizens Advice Carlisle and Eden</td>\n      <td>Single Queue 25</td>\n      <td>30/0027</td>\n      <td>True</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>1</td>\n      <td>2020-06-01</td>\n      <td>Citizens Advice Cheadle</td>\n      <td>Single Queue 45</td>\n      <td>50/0070</td>\n      <td>True</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>1</td>\n      <td>2020-06-01</td>\n      <td>Citizens Advice Gosport</td>\n      <td>Single queue 25</td>\n      <td>85/0028</td>\n      <td>False</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>1</td>\n      <td>2020-06-01</td>\n      <td>Citizens Advice Hammersmith &amp; Fulham</td>\n      <td>West &amp; South West London</td>\n      <td>17/0016</td>\n      <td>True</td>\n    </tr>\n    <tr>\n      <th>4</th>\n      <td>1</td>\n      <td>2020-06-01</td>\n      <td>Citizens Advice Waverley</td>\n      <td>Single queue 80</td>\n      <td>75/0049</td>\n      <td>True</td>\n    </tr>\n    <tr>\n      <th>...</th>\n      <td>...</td>\n      <td>...</td>\n      <td>...</td>\n      <td>...</td>\n      <td>...</td>\n      <td>...</td>\n    </tr>\n    <tr>\n      <th>77219</th>\n      <td>15955</td>\n      <td>2021-05-10</td>\n      <td>None</td>\n      <td>None</td>\n      <td>None</td>\n      <td>False</td>\n    </tr>\n    <tr>\n      <th>77220</th>\n      <td>16175</td>\n      <td>2021-06-07</td>\n      <td>None</td>\n      <td>None</td>\n      <td>None</td>\n      <td>False</td>\n    </tr>\n    <tr>\n      <th>77221</th>\n      <td>17172</td>\n      <td>2021-07-05</td>\n      <td>None</td>\n      <td>None</td>\n      <td>None</td>\n      <td>False</td>\n    </tr>\n    <tr>\n      <th>77222</th>\n      <td>17574</td>\n      <td>2021-06-21</td>\n      <td>None</td>\n      <td>None</td>\n      <td>None</td>\n      <td>False</td>\n    </tr>\n    <tr>\n      <th>77223</th>\n      <td>17722</td>\n      <td>2021-06-28</td>\n      <td>None</td>\n      <td>None</td>\n      <td>None</td>\n      <td>False</td>\n    </tr>\n  </tbody>\n</table>\n<p>77224 rows × 6 columns</p>\n</div>"
+     },
+     "metadata": {},
+     "execution_count": 231
+    }
+   ],
+   "source": [
+    "phone_df"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 222,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df.to_csv('joint_table.csv')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 229,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "query_phone = '''select * from dbo.view_adviceline_phone_dashboard_aggregated_no_agents\n",
+    "where answered_date >= '2020-06-01'\n",
+    "'''\n",
+    "phone_df = _sql_access_utils.get_query_as_dataframe(query=query_phone ,database='kcom_data')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 187,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "stream",
+     "name": "stdout",
+     "text": [
+      "2021-06-01\n2021-06-02\n2021-06-03\n2021-06-04\n2021-06-07\n2021-06-08\n2021-06-09\n2021-06-10\n2021-06-11\n2021-06-14\n2021-06-15\n"
+     ]
+    }
+   ],
+   "source": [
+    "for date in calendar_df.RetVal.dt.date:\n",
+    "    if date in chat_df.chat_date.to_list():\n",
+    "        print(date)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 230,
+   "metadata": {
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "phone_df_store = phone_df.copy()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ]
+}

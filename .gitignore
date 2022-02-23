@@ -1,0 +1,14 @@
+**/.vscode
+**/venv
+**/Ingests
+**/__pycache__
+__pycache__/_joint_record_helpers.cpython-38.pyc
+separate_merged_offices - dim_AL-chat_email_phone_lookup_dump.tsv
+s4_targets.csv
+joint_table.csv
+email_table.csv
+joint_table.csv
+joint_table.csv
+joint_table.csv
+Joint Table Generator.ipynb
+View Table.ipynb

@@ -1,0 +1,1 @@
+"c:/Users/jonathan.li/Desktop/Chat Ingest/venv/Scripts/python.exe" generate_joint_records.py
